@@ -68,6 +68,3 @@ Users can also enter their own reviews to predict sentiment.
 Conclusion  
 This project demonstrates the use of natural language processing and machine learning techniques to analyze airline customer reviews.  
 It provides useful insights into customer opinions and overall service quality.
-
-Note  
-This project is developed for academic purposes.
