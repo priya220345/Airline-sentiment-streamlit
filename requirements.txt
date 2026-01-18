@@ -3,3 +3,5 @@ pandas
 nltk
 textblob
 scikit-learn
+matplotlib
+seaborn
