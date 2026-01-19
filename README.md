@@ -50,21 +50,9 @@ airline.csv
 airport.csv  
 lounge.csv  
 seat.csv  
-README.md  
-.streamlit/config.toml  
-
-How to Run the Project  
-
-Install required libraries:
-pip install streamlit nltk textblob scikit-learn seaborn matplotlib pandas  
-
-Run the application:
-streamlit run app.py  
-
-Output  
-The system displays sentiment classification results and visual insights.  
-Users can also enter their own reviews to predict sentiment.
 
 Conclusion  
 This project demonstrates the use of natural language processing and machine learning techniques to analyze airline customer reviews.  
 It provides useful insights into customer opinions and overall service quality.
+Streamlit deployed link:
+https://airline-sentiment-app-smhgdw3lmpjomgptbau8zr.streamlit.app/~/+/#skytrax-airline-reviews-sentiment-analysis
