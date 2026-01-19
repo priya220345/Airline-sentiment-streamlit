@@ -43,14 +43,6 @@ Application Features
 - Category-wise sentiment visualization  
 - Real-time sentiment prediction  
 
-Project Structure  
-project/
-app.py  
-airline.csv  
-airport.csv  
-lounge.csv  
-seat.csv  
-
 Conclusion  
 This project demonstrates the use of natural language processing and machine learning techniques to analyze airline customer reviews.  
 It provides useful insights into customer opinions and overall service quality.
