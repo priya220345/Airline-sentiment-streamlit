@@ -69,7 +69,6 @@ neutral_words = [
 
 def assign_sentiment(text, recommended):
     text = text.lower()
-
     if any(word in text for word in neutral_words):
         return "Neutral"
     elif recommended == 1:
@@ -86,6 +85,25 @@ df["sentiment"] = df.apply(
 
 sentiment_map = {"Negative": 0, "Neutral": 1, "Positive": 2}
 df["sentiment_label"] = df["sentiment"].map(sentiment_map)
+
+# ---------------- TRAIN MODEL (CACHED) ----------------
+@st.cache_resource
+def train_svm_model(df):
+    X = df["cleaned_review"]
+    y = df["sentiment_label"]
+
+    vectorizer = TfidfVectorizer(
+        max_features=6000,
+        ngram_range=(1, 2)
+    )
+    X_vec = vectorizer.fit_transform(X)
+
+    model = LinearSVC(dual=False)
+    model.fit(X_vec, y)
+
+    return model, vectorizer
+
+svm_model, vectorizer = train_svm_model(df)
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("Navigation")
@@ -108,16 +126,17 @@ if page == "Project Overview":
 To analyze airline customer reviews and classify them into  
 **Positive**, **Neutral**, or **Negative** sentiments.
 
-**Approach Used:**
+**Technologies Used:**
+- Python
 - Natural Language Processing (NLP)
-- Text Cleaning & Lemmatization
-- TF-IDF Feature Extraction
-- Support Vector Machine (SVM)
+- TF-IDF Vectorization
+- Support Vector Machine (LinearSVC)
+- Streamlit
 
 **Why SVM?**
-- Performs well on high-dimensional text data
-- Achieved highest accuracy during model comparison
-- Suitable for real-world sentiment analysis systems
+- Best performance on high-dimensional text data
+- Achieved highest accuracy during experiments
+- Widely used in real-world sentiment analysis
     """)
 
     st.success("This is a complete Machine Learning–based Customer Review Analysis System.")
@@ -152,21 +171,9 @@ elif page == "Visual Analysis":
         ax.set_title("Category-wise Sentiment Distribution")
         st.pyplot(fig)
 
-# ---------------- PREDICTION PAGE ----------------
+# ---------------- PREDICTION ----------------
 elif page == "Predict Review Sentiment":
     st.header("Predict Review Sentiment")
-
-    X = df["cleaned_review"]
-    y = df["sentiment_label"]
-
-    vectorizer = TfidfVectorizer(
-        max_features=6000,
-        ngram_range=(1, 2)
-    )
-    X_vec = vectorizer.fit_transform(X)
-
-    svm_model = LinearSVC()
-    svm_model.fit(X_vec, y)
 
     user_review = st.text_area(
         "Enter a customer review",
