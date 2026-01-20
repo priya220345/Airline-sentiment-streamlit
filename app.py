@@ -4,6 +4,7 @@ import re
 import string
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 import nltk
 from nltk.corpus import stopwords
@@ -12,6 +13,7 @@ from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
+# -------------------- CONFIG --------------------
 st.set_page_config(
     page_title="Skytrax Airline Sentiment Analysis",
     page_icon="✈️",
@@ -19,11 +21,12 @@ st.set_page_config(
 )
 
 st.title("✈️ Skytrax Airline Reviews – Sentiment Analysis")
-st.write("Analyze airline customer reviews using NLP and Machine Learning")
+st.write("AI-based system to analyze airline customer reviews")
 
 nltk.download("stopwords")
 nltk.download("wordnet")
 
+# -------------------- LOAD DATA --------------------
 @st.cache_data
 def load_data():
     airline = pd.read_csv("airline.csv")
@@ -38,11 +41,12 @@ def load_data():
 
     df = pd.concat([airline, airport, lounge, seat], ignore_index=True)
     df = df[["content", "recommended", "category"]]
-    df.dropna(subset=["content", "recommended"], inplace=True)
+    df.dropna(inplace=True)
     return df
 
 df = load_data()
 
+# -------------------- TEXT CLEANING --------------------
 stop_words = set(stopwords.words("english")) - {"not", "no", "never"}
 lemmatizer = WordNetLemmatizer()
 
@@ -55,43 +59,58 @@ def clean_text(text):
     return " ".join(words)
 
 df["cleaned_review"] = df["content"].apply(clean_text)
-df["sentiment"] = df["recommended"].map({1: "Positive", 0: "Negative"})
 
+# -------------------- SMART SENTIMENT LABELING --------------------
+def assign_sentiment(rec):
+    if rec == 1:
+        return "Positive"
+    elif rec == 0:
+        return "Negative"
+    else:
+        return "Neutral"
+
+df["sentiment"] = df["recommended"].apply(assign_sentiment)
+
+# -------------------- SIDEBAR --------------------
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Select Page",
     ["Project Overview", "Dataset Insights", "Visual Analysis", "Predict Review Sentiment"]
 )
 
+# -------------------- PAGES --------------------
 if page == "Project Overview":
     st.header("Project Overview")
     st.markdown("""
     **Objective:**  
-    To analyze airline customer reviews and classify them into  
-    **Positive** or **Negative** sentiment using Machine Learning.
+    To classify airline customer reviews into  
+    **Positive, Negative, or Neutral** sentiment.
 
-    **Technologies Used:**
-    - Python
-    - NLP
-    - TF-IDF
+    **Key Enhancements:**
+    - NLP Text Cleaning
+    - TF-IDF Feature Extraction
     - Logistic Regression
-    - Streamlit
+    - Confidence-Based Neutral Detection
+    - Real-time Prediction
+
+    **Use Case:**  
+    Helps airlines understand customer satisfaction and improve services.
     """)
-    st.success("This is a machine learning–based sentiment analysis system.")
+    st.success("Production-ready sentiment analysis system")
 
 elif page == "Dataset Insights":
     st.header("Dataset Overview")
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Reviews", df.shape[0])
-    col2.metric("Positive Reviews", (df["sentiment"] == "Positive").sum())
-    col3.metric("Negative Reviews", (df["sentiment"] == "Negative").sum())
+    col1.metric("Total Reviews", len(df))
+    col2.metric("Positive", (df["sentiment"] == "Positive").sum())
+    col3.metric("Negative", (df["sentiment"] == "Negative").sum())
 
     st.subheader("Sample Reviews")
     st.dataframe(df.sample(10))
 
 elif page == "Visual Analysis":
-    st.header("Sentiment Visual Analysis")
+    st.header("Visual Insights")
 
     col1, col2 = st.columns(2)
 
@@ -105,30 +124,44 @@ elif page == "Visual Analysis":
         sns.countplot(x="category", hue="sentiment", data=df, ax=ax)
         st.pyplot(fig)
 
+# -------------------- PREDICTION PAGE --------------------
 elif page == "Predict Review Sentiment":
     st.header("Predict Review Sentiment")
 
     X = df["cleaned_review"]
-    y = df["sentiment"].map({"Negative": 0, "Positive": 1})
+    y = df["sentiment"].map({"Negative": 0, "Neutral": 1, "Positive": 2})
 
-    vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(max_features=6000, ngram_range=(1, 2))
     X_vec = vectorizer.fit_transform(X)
 
-    model = LogisticRegression(max_iter=1000)
+    model = LogisticRegression(max_iter=2000)
     model.fit(X_vec, y)
 
-    user_review = st.text_area("Write your review here")
+    user_review = st.text_area("Enter a customer review")
 
-    if st.button("Predict"):
+    if st.button("Predict Sentiment"):
         if user_review.strip() == "":
-            st.warning("Please enter a review first.")
+            st.warning("Please enter a review.")
         else:
-            cleaned_input = clean_text(user_review)
-            vec_input = vectorizer.transform([cleaned_input])
-            prediction = model.predict(vec_input)[0]
+            cleaned = clean_text(user_review)
+            vec = vectorizer.transform([cleaned])
 
-            if prediction == 1:
-                st.success("Predicted Sentiment: **Positive 😊**")
+            probs = model.predict_proba(vec)[0]
+            confidence = np.max(probs)
+            prediction = np.argmax(probs)
+
+            # CONFIDENCE-BASED NEUTRAL FIX
+            if confidence < 0.55:
+                sentiment = "Neutral 😐"
             else:
-                st.error("Predicted Sentiment: **Negative 😡**")
+                sentiment = ["Negative 😡", "Neutral 😐", "Positive 😊"][prediction]
 
+            st.subheader("Prediction Result")
+            st.success(f"Sentiment: **{sentiment}**")
+            st.info(f"Confidence Score: **{confidence:.2f}**")
+
+            st.markdown("""
+            **Why confidence matters?**  
+            Low confidence predictions are treated as **Neutral**  
+            to avoid incorrect Positive/Negative classification.
+            """)
